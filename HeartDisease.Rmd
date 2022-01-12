@@ -36,7 +36,7 @@ The heart disease dataset was originally obtained from Kaggle and originally der
 library(readxl)
 heartdisease <- read_excel("~/Downloads/heartdisease.xls")
 
-### ### "Updating Loaded Packages - Do you want to restart R prior to installing?" >>> Respond NO ###
+###"Updating Loaded Packages - Do you want to restart R prior to installing?" >>> Respond NO ###
 
 library(dslabs)
 library(tidyverse)
@@ -108,7 +108,6 @@ names(heartdisease)<- c("age","sex","chestpain","bloodpressure","cholesterol","d
 heartdisease$age_groupR[heartdisease$age_groupR<45] <- "1"
 heartdisease$age_groupR[heartdisease$age_groupR>=45 & heartdisease$age_groupR <63] <- "2"
 heartdisease$age_groupR[heartdisease$age_groupR>=63] <- "3"
-
 ```
 
 #FINAL DATA SET
@@ -137,6 +136,7 @@ boxplot(heartdisease$cholesterol, main="Cholesterol of US Adults", xlab="US Adul
 
 ggplot(heartdisease, aes(x=age_group)) + geom_bar(fill="coral") + xlab("Age Group") + ylab("Frequency") + ggtitle("Age Groups of US Adults")
 ```
+
 ###Step 3: Multivariate Data Analysis
 The R code to plot and examine the multivariate summaries of the data.
 
@@ -172,7 +172,6 @@ a. The R code used to analyze the seven hypotheses.
 t.test(heartdisease$cholesterol ~ heartdisease$gender)
 aggregate((formula = heartdisease$cholesterol~heartdisease$gender), FUN = mean)
 aggregate((formula = heartdisease$cholesterol~heartdisease$gender), FUN = sd)
-
 ```
 
 The first goal of this study was to investigate gender differences in cholesterol levels (translating to risk for heart disease) among adults in the United States. An independent samples t-test (significance level of p < 0.05) was performed to test whether there was a significant difference in the average cholesterol level among males (M = 239.29, SD = 42. 78) compared to the average cholesterol level among females (M = 261.30, SD = 65.09). The results revealed a significant gender difference in the average level of cholesterol, t(134.39) = 3.02, p = 0.003; CI95% = 7.62 - 36.41. If you continuously repeat this experiment, 95% of the resulting confidence intervals will contain the mean of the differences. Consistent with the hypothesis, the results revealed that female adults have a significantly higher cholesterol level and therefore a greater risk of heart disease than males adults. Future studies should investigate whether young or old women have a greater risk for heart disease in order to determine if there is an interaction between gender and age.
