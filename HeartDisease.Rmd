@@ -1,0 +1,287 @@
+---
+title: "Risk Factors for Heart Disease Among US Adults
+author: "Vanhong Ho"
+output: html_document
+---
+###Introduction
+
+I will be identifying risk factors for heart disease among adults within the United States. Despite dramatic declines, coronary heart disease continues to be the leading cause of death among men and women in the United States (Centers for Disease Control and Prevention, 2017). Extensive epidemiological research has identified several risk factors in the attempt to understand the development of coronary heart disease (CHD). These risks factors include cigarette smoking (United States Surgeon General, 2014), hypertension (MacMahon et al., 1990), diabetes (Stamler et al., 1993), and hyperlipidemia (Verschuren et al., 1995). Treatment of these risk factors has been shown to reduce future cardiac events, resulting in their recognition as conventional risk factors (Collins et al., 1990). 
+
+Although the significance of these conventional risk factors is well established, more than half of patients with CHD do not identify with any of these conventional risk factors (Hennekens, 1998). Not only does this imply that other factors play a significant role in the development of heart disease, there is a substantial gap in the current understanding regarding the pathogenesis of heart disease. While previous literature exists regarding nontraditional risk factors, this research is limited. Further research regarding the risk factors for heart disease must be conducted in order to guide the practice of clinical medicine, public health policies, and future research efforts. This research would also allow people to identify populations that may be susceptible for heart disease in order to cater prevention efforts.  
+
+Throughout this portfolio, the risk for heart disease will be operationalized by cholesterol level (such that a greater cholesterol level will indicate a greater risk for heart disease) since accumulation of cholesterol in the blood results in a heart condition known as atherosclerosis. In this type of heart disease, the arteries become narrow due to the buildup of plaque (WebMD, 2018). This blockage causes blood flow to the heart to slow down, causing individuals to experience chest pain or even fatal heart attacks if the blood supply to a certain portion of the heart is completely cut off.
+
+The heart disease dataset was originally obtained from Kaggle and originally derived from the UCI Machine Learning Repository. The "Heart Disease UCI" dataset can be accessed with the following link: https://www.kaggle.com/ronitf/heart-disease-uci. Variables not directly used were removed and all remaining variables were given meaningful names. No identifying information was provided for the 303 participants.
+
+###Research Questions
+1.  Does gender influence the risk for heart disease? 
+2.  Do certain types of chest pain influence the risk for heart disease?
+3.  Do certain health conditions such as exercised-induced angina (narrowing of the airways in the lungs triggered by strenuous exercise) or diabetes influence the risk for heart disease?
+4.  Is blood pressure correlated with heart disease?
+5.  Is maximum heart rate correlated with heart disease?
+6.  Out of the 3 age groups, which group will have the highest risk for heart disease? 
+
+###Research Hypotheses
+1.  Female adults are more likely to have heart disease than male adults.
+2.  Adults with typical angina chest pain are more likely to have heart disease than people with atypical angina, non-anginal, and asymptomatic chest pain.
+3.  Adults with angina are more likely to have heart disease than adults without angina.
+4.  Adults with diabetes are more likely to have heart disease than adults without diabetes.
+5.  Blood pressure is positively correlated with heart disease.
+6.  Maximum heart rate is negatively correlated with heart disease.
+7.  The age groups will differ in cholesterol, which will result in differences in risk for heart disease. Elderly people are more likely to have heart disease than young and middle aged people.
+
+####Step 1: Accessing the Datafile
+
+```{r}
+library(readxl)
+heartdisease <- read_excel("~/Downloads/heartdisease.xls")
+
+### ### "Updating Loaded Packages - Do you want to restart R prior to installing?" >>> Respond NO ###
+
+library(dslabs)
+library(tidyverse)
+library(car)
+install.packages("carData")
+library(carData)
+```
+
+```{r}
+View(heartdisease)
+summary(heartdisease)
+summary(heartdisease$age)
+```
+
+#Recode sex -> gender
+```{r}
+heartdisease<- cbind(heartdisease, heartdisease$sex)
+names(heartdisease)<- c("age","sex","chestpain","bloodpressure","cholesterol","diabetes","angina", "heartrate", "gender")
+heartdisease$gender[heartdisease$gender==0] <- "female"
+heartdisease$gender[heartdisease$gender==1] <- "male"
+```
+
+#Recode chestpain -> chestpain_R
+```{r}
+heartdisease<- cbind(heartdisease, heartdisease$chestpain)
+names(heartdisease)<- c("age","sex","chestpain","bloodpressure","cholesterol","diabetes","angina", "heartrate", "gender", "chestpain_R")
+heartdisease$chestpain_R[heartdisease$chestpain_R==0] <- "typical"
+heartdisease$chestpain_R[heartdisease$chestpain_R==1] <- "atypical"
+heartdisease$chestpain_R[heartdisease$chestpain_R==2] <- "non-anginal"
+heartdisease$chestpain_R[heartdisease$chestpain_R==3] <- "asymptomatic"
+```
+
+#Recode angina -> angina_R
+```{r}
+heartdisease<- cbind(heartdisease, heartdisease$angina)
+names(heartdisease)<- c("age","sex","chestpain","bloodpressure","cholesterol","diabetes","angina", "heartrate", "gender", "chestpain_R", "angina_R")
+heartdisease$angina_R[heartdisease$angina_R==0] <- "No"
+heartdisease$angina_R[heartdisease$angina_R==1] <- "Yes"
+```
+
+#Recode diabetes -> diabetes_R
+```{r}
+heartdisease<- cbind(heartdisease, heartdisease$diabetes)
+names(heartdisease)<- c("age","sex","chestpain","bloodpressure","cholesterol","diabetes","angina", "heartrate", "gender", "chestpain_R", "angina_R", "diabetes_R")
+heartdisease$diabetes_R[heartdisease$diabetes_R==0] <- "No"
+heartdisease$diabetes_R[heartdisease$diabetes_R==1] <- "Yes"
+```
+
+#Recode age -> age groups using M and SD.
+1 = Young
+2 = Middle aged
+3 = Elderly
+
+```{r}
+heartdisease<- cbind(heartdisease, heartdisease$age)
+names(heartdisease)<- c("age","sex","chestpain","bloodpressure","cholesterol","diabetes","angina", "heartrate", "gender", "chestpain_R", "angina_R", "diabetes_R", "age_group")
+
+summary(heartdisease$age)
+hist(heartdisease$age)
+mean(heartdisease$age)
+sd(heartdisease$age)
+
+heartdisease$age_group[heartdisease$age_group>=63] <- "elderly"
+heartdisease$age_group[heartdisease$age_group>=45 & heartdisease$age_group <63] <- "middle"
+heartdisease$age_group[heartdisease$age_group<45] <- "young"
+
+heartdisease<- cbind(heartdisease, heartdisease$age)
+names(heartdisease)<- c("age","sex","chestpain","bloodpressure","cholesterol","diabetes","angina", "heartrate", "gender", "chestpain_R", "angina_R", "diabetes_R", "age_group", "age_groupR")
+heartdisease$age_groupR[heartdisease$age_groupR<45] <- "1"
+heartdisease$age_groupR[heartdisease$age_groupR>=45 & heartdisease$age_groupR <63] <- "2"
+heartdisease$age_groupR[heartdisease$age_groupR>=63] <- "3"
+
+```
+
+#FINAL DATA SET
+```{r}
+View(heartdisease)
+```
+
+In summary, the independent variables in this study included gender (F/M), type of chest pain (typical angina, atypical angina, non-anginal, and asymptomatic pain), blood pressure (in mm/Hg), angina (yes/no), diabetes (yes/no), maximum heart rate (heart beats per minute), and age group (young, middle aged, and elderly people). The dependent variable was risk for heart disease, which was operationalized by cholesterol level (serum cholesterol in mg/dl). A higher cholesterol level indicates a greater risk for heart disease.
+
+###Step 2: Exploratory Data Analysis
+
+```{r}
+ggplot(heartdisease, aes(x=gender)) + geom_bar(fill="sky blue") + xlab("Gender") + ylab("Frequency") + ggtitle("Gender of US Adults")
+
+ggplot(heartdisease, aes(x=chestpain_R)) + geom_bar(fill="orange") + xlab("Type of Chest Pain") + ylab("Frequency") + ggtitle("Chest Pain in US Adults")
+
+hist(heartdisease$bloodpressure, main="Blood Pressure of US Adults", xlab="Blood Pressure (mm/Hg)", ylab="Frequency", col="purple")
+
+ggplot(heartdisease, aes(x=diabetes_R)) + geom_bar(fill="brown") + xlab("Presense of Diabetes") + ylab("Frequency") + ggtitle("Diabetes in US Adults")
+
+ggplot(heartdisease, aes(x=angina_R)) + geom_bar(fill="pink") + xlab("Presense of Angina") + ylab("Frequency") + ggtitle("Angina in US Adults")
+
+boxplot(heartdisease$heartrate, main="Max Heart Rate of US Adults", xlab="US Adults", ylab="Max Heart Rate (heart beats/min)")
+
+boxplot(heartdisease$cholesterol, main="Cholesterol of US Adults", xlab="US Adults", ylab="Cholesterol (mg/dl)")
+
+ggplot(heartdisease, aes(x=age_group)) + geom_bar(fill="coral") + xlab("Age Group") + ylab("Frequency") + ggtitle("Age Groups of US Adults")
+```
+###Step 3: Multivariate Data Analysis
+The R code to plot and examine the multivariate summaries of the data.
+
+```{r}
+ggplot(heartdisease, aes(gender,cholesterol)) + geom_boxplot(aes(gender,cholesterol)) + geom_boxplot(aes(colour = gender)) + xlab("Gender") + ylab("Cholesterol (mg/dl)") + ggtitle("Gender vs Cholesterol") +  labs(colour = "Gender")
+                                                                               ggplot(heartdisease, aes(chestpain_R,cholesterol)) + geom_boxplot(aes(chestpain_R,cholesterol)) + geom_boxplot(aes(colour = chestpain_R)) + xlab("Chest Pain") + ylab("Cholesterol (mg/dl)") + ggtitle("Chest Pain vs Cholesterol") + theme(axis.text.x = element_text(angle = 60, hjust = 1)) + labs(colour = "Types of Chest Pain")
+                                                                                                 
+ggplot(heartdisease, aes(angina_R,cholesterol)) + geom_boxplot(aes(angina_R,cholesterol)) + geom_boxplot(aes(colour = angina_R)) + xlab("Angina") + ylab("Cholesterol (mg/dl)") + ggtitle("Angina vs Cholesterol") + labs(colour = "Presence of Angina")
+
+ggplot(heartdisease, aes(diabetes_R,cholesterol)) + geom_boxplot(aes(colour = diabetes_R)) + xlab("Diabetes") + ylab("Cholesterol (mg/dl)") + ggtitle("Diabetes vs Cholesterol") + labs(colour = "Presence of Diabetes")
+
+ggplot(heartdisease,aes(bloodpressure,cholesterol)) + geom_point(aes(color=age_group)) + xlab("Blood Pressure (mm/Hg)") + ylab("Cholesterol (mg/dl)") + ggtitle("Blood Pressure vs Cholesterol") + labs(colour = "Age Group")
+
+ggplot(heartdisease,aes(heartrate,cholesterol))+ geom_point(aes(color=age_group))+ xlab("Heart Rate (heart beats/min)") + ylab("Cholesterol (mg/dl)") + ggtitle("Heart Rate vs Cholesterol") + labs(colour = "Age Group")
+
+ggplot(heartdisease,aes(age_group,cholesterol))+ geom_boxplot(aes(color=age_group))+ xlab("Age") + ylab("Cholesterol (mg/dl)") + ggtitle("Age Group vs Cholesterol") + labs(colour = "Age Group")
+```
+
+#Interpretation
+Hypothesis 1:	Female adults are more likely to have heart disease than male adults.
+Hypothesis 2: Adults with different types of chest pain will differ in cholesterol levels. People with typical angina pain are more likely to have heart disease than those with atypical, non-anginal, and asymptomatic chest pain.
+Hypothesis 3: Adults with angina are more likely to have heart disease than people that do not have angina.
+Hypothesis 4: Adults with diabetes are more likely to have heart disease than people that do not have diabetes.
+Hypothesis 5: The pattern suggests that the resulting correlation between blood pressure and risk for heart disease is positive and small.
+Hypothesis 6: The pattern suggests that the resulting correlation between maximum heart rate and risk for heart disease is negative and small.
+Hypothesis 7: The age groups will differ in cholesterol, resulting in differences in risk for heart disease. Elderly people are more likely to have heart disease than young and middle aged people.
+
+###Step 4: Inferential Tests
+
+a. The R code used to analyze the seven hypotheses.
+```{r}
+#Hypothesis 1
+t.test(heartdisease$cholesterol ~ heartdisease$gender)
+aggregate((formula = heartdisease$cholesterol~heartdisease$gender), FUN = mean)
+aggregate((formula = heartdisease$cholesterol~heartdisease$gender), FUN = sd)
+
+```
+
+The first goal of this study was to investigate gender differences in cholesterol levels (translating to risk for heart disease) among adults in the United States. An independent samples t-test (significance level of p < 0.05) was performed to test whether there was a significant difference in the average cholesterol level among males (M = 239.29, SD = 42. 78) compared to the average cholesterol level among females (M = 261.30, SD = 65.09). The results revealed a significant gender difference in the average level of cholesterol, t(134.39) = 3.02, p = 0.003; CI95% = 7.62 - 36.41. If you continuously repeat this experiment, 95% of the resulting confidence intervals will contain the mean of the differences. Consistent with the hypothesis, the results revealed that female adults have a significantly higher cholesterol level and therefore a greater risk of heart disease than males adults. Future studies should investigate whether young or old women have a greater risk for heart disease in order to determine if there is an interaction between gender and age.
+
+```{r}
+###Hypothesis 2
+#Examining Assumptions - Residuals are evenly distributed
+plot(resid(lm(cholesterol ~ chestpain_R, data = heartdisease)))
+shapiro.test(resid(lm(cholesterol ~ chestpain_R, data = heartdisease)))
+#Examining Assumptions - Homogeneity of Variance
+leveneTest(cholesterol ~ chestpain_R, data = heartdisease, center = median)
+#Examining Assumptions - Sampling Distribution is Normal
+shapiro.test(heartdisease$cholesterol)
+hist(heartdisease$cholesterol)
+#ANOVA
+summary(aov(cholesterol ~ chestpain, data = heartdisease))
+aggregate((formula = heartdisease$cholesterol~heartdisease$chestpain_R), FUN = mean)
+aggregate((formula = heartdisease$cholesterol~heartdisease$chestpain_R), FUN = sd)
+#Post-Hoc Test
+TukeyHSD((aov(cholesterol~chestpain_R, data = heartdisease))) 
+```
+The second goal of this study was to investigate differences in cholesterol levels (translating to risk for heart disease) across adults with different types of chest pain in the United States. A Kruskall-Wallis test (non-parametric version of ANOVA) was conducted on the average cholesterol level in four different chest pain groups. An alpha level of p < 0.05 was used for all analyses conducted. No significant effect of chest pain on cholesterol was found, χ2(1) = 1.79, p = .18. In other words, cholesterol level did not significantly vary across people with different types of chest pain (typical = 250.13, SD = 51.54; atypical = 244.78, SD = 43.23; non-anginal = 243.17, SD = 60.26; aymptomatic = 237.13, SD 33.90). These results do not support the hypothesis that people with typical angina chest pain are more likely to have heart disease than people with atypical angina, non-anginal, and asymptomatic chest pain. Future research should be conducted to determine if pain from other parts of the body influences the risk for heart disease.
+
+```{r}
+#Hypothesis 3
+t.test(heartdisease$cholesterol ~ heartdisease$angina_R)
+aggregate((formula = heartdisease$cholesterol~heartdisease$angina_R), FUN = mean)
+aggregate((formula = heartdisease$cholesterol~heartdisease$angina_R), FUN = sd)
+```
+
+The third goal of this study was to investigate whether the presence of angina influences cholesterol levels (translating to risk for heart disease) among adults in the United States. An independent samples t-test (significance level of p < 0.05) was performed to test whether there was a significant difference in the average cholesterol level among those with angina (M = 251.24, SD = 49.46) compared to the average cholesterol level among those without angina (M = 243.85, SD = 52.89). The results revealed a nonsignificant angina difference in the average level of cholesterol, t(206.28) = -1.19, p = 0.23; CI95% = -19.62 - 4.83. In other words, adults with angina do not significantly have a higher cholesterol or greater risk of heart disease than adults without angina. Therefore, the hypothesis that adults with angina will have a greater risk of heart disease than adults without angina is not supported. Future studies should ask participants about the frequency in which they experience angina; this would allow researchers to determine whether the frequency of angina influences the risk for heart disease.
+
+```{r}
+#Hypothesis 4
+t.test(heartdisease$cholesterol ~ heartdisease$diabetes_R)
+aggregate((formula = heartdisease$cholesterol~heartdisease$diabetes_R), FUN = mean)
+aggregate((formula = heartdisease$cholesterol~heartdisease$diabetes_R), FUN = sd)
+```
+
+The fourth goal of this study was to investigate the influence of diabetes in cholesterol levels (translating to risk for heart disease) among adults in the United States. An independent samples t-test (significance level of p < 0.05) was performed to test whether there was a significant difference in the average cholesterol level among those with diabetes (M = 247.91, SD = 51.12) compared to the average cholesterol level among those without diabetes (M = 245.98, SD = 52.05). The results revealed a nonsignificant diabetes difference in the average level of cholesterol t(61.01) = -0.23, p = 0.82; CI95% = -18.49 - 14.62). In other words, adults with diabetes do not significantly have a higher cholesterol or greater risk of heart disease than adults without diabetes. Therefore, the hypothesis that adults with diabetes will have a greater risk of heart disease than adults without diabetes is not supported. Future studies should ask participants whether they have a family history of diabetes; this would allow researchers to determine whether a family history for diabetes influences the risk for heart disease.
+
+```{r}
+###Hypothesis 5
+cor.test(heartdisease$bloodpressure,heartdisease$cholesterol)
+```
+
+The fifth goal of this study was to investigate the relationship between blood pressure and risk for heart disease among adults in the United States. A Pearson correlation coefficient (significance level of p < 0.05) was calculated to investigate the relationship between blood pressure and heart disease. The results revealed a positive relationship (r2 = 0.01) between blood pressure and risk of heart disease for the sample as a whole (r(301) = .12, p = .03; CI95% = 0.01 - 0.23). If you continuously repeat this experiment, 95% of the resulting confidence intervals will contain the mean of the differences. The results suggest that a higher blood pressure is significantly associated with a greater risk for heart disease (higher cholesterol) for adults in the United States. Consistent with the hypothesis, an adult is more likely to have heart disease as their blood pressure increases. Future studies should investigate the relationship between blood pressure and risk for heart disease among adults in Europe in order to determine if this pattern can generalize to other countries.
+
+```{r}
+###Hypothesis 6
+cor.test(heartdisease$heartrate,heartdisease$cholesterol)
+```
+
+The sixth goal of this study was to investigate the relationship between maximum heart rate and risk for heart disease among adults in the United States. A Pearson correlation coefficient (significance level of p < 0.05) was calculated to investigate the relationship between maximum heart rate and heart disease. The results revealed a negative relationship between maximum heart rate and risk for heart disease for the sample as a whole (r(301) = -.01, p = .86; CI95% = -0.12 - 0.10). In other words, an adult is more likely to have heart disease as their maximum heart rate decreases. However, this relationship is not significant. Therefore, these results do not support the hypothesis that maximum heart rate is negatively correlated with heart disease. Future studies should investigate the relationship between maximum heart rate and risk for heart disease among children in the United States in order to determine if different age agroups display the same pattern.
+
+
+```{r}
+###Hypothesis 7
+#Examining Assumptions - Residuals are evenly distributed
+plot(resid(lm(cholesterol ~ age_group, data = heartdisease)))
+shapiro.test(resid(lm(cholesterol ~ age_group, data = heartdisease)))
+#Examining Assumptions - Homogeneity of Variance
+leveneTest(cholesterol ~ age_group, data = heartdisease, center = median)
+#Examining Assumptions - Sampling Distribution is Normal
+shapiro.test(heartdisease$cholesterol)
+hist(heartdisease$cholesterol)
+#ANOVA
+summary(aov(cholesterol ~ age_group, data = heartdisease))
+aggregate((formula = heartdisease$cholesterol~heartdisease$age_group), FUN = mean)
+aggregate((formula = heartdisease$cholesterol~heartdisease$age_group), FUN = sd)
+#Post-Hoc Test
+TukeyHSD((aov(cholesterol~age_group, data = heartdisease))) 
+```
+
+The seventh goal of this study was to investigate differences in cholesterol levels (translating to risk for heart disease) across different age groups of adults in the United States. A Kruskall-Wallis test (non-parametric version of ANOVA) was conducted on the average cholesterol level in three different age groups. An alpha level of p < 0.05 was used for all analyses conducted. A significant effect of age on cholesterol was found, χ2(2) = 7.26, p < .001. Non-parametric testing (pairwise Wilcox test) revealed that middle-aged people (M = 246.65, SD = 46.71) had a significantly higher cholesterol level than young adults (M = 227.05, SD = 45.35). However, none of the remaining comparisons were significant (elderly = 262.98, SD = 65.73). Taken together, these results suggest that cholesterol level varies across age groups with a notable difference in cholesterol levels reported by middle-aged adults compared to young adults. These results do not support the hypothesis that elderly people would have a higher cholesterol than young and middle-aged people. Additional research is necessary to understand potential reasons that middle-aged people have higher cholesterol levels than young adults. Specifically, future studies can compare the physical activity of these two age groups in order to determine if lack of exercise contributes to a greater risk for heart disease.
+
+###Discussion
+
+Overall, there was mixed support for the hypotheses. Consistent with the first hypothesis, female adults tend to have a significantly higher cholesterol level and therefore a greater risk of heart disease than males adults. This is consistent with previous research, which found that women may be at risk for chronic heart disease events at a lower glucose threshold than men (Levitzky et al., 2008). Notably, this study also found middle aged people and those with high blood pressure to also be at greater risk for heart disease. On the other hand, there was no significant relationship between the presence of angina and diabetes with the risk of heart disease. This is inconsistent with previous resarch which found that people with diabetes, particularly those who were at 50 years of age, conferred the highest lifetime risk for heart disease (Lloyd-Jones et al., 2006). This contradiction may be due to the limited sample size and unequal distribution in age groups. Different types of chest pain and maximum heart rate also do not influence the risk for heart disease. In summary, demographic factors such as age and gender influence the likelihood for heart disease. However, heart disease is not influenced by certain health conditions, types of chest pain, or maximum heart rate among adults. 
+
+Future research should investigate these risk factors among different age groups of children in the United States in order to determine if these patterns can be generalized to a greater population. Future research should also continue to identify additional risk factors for heart disease, including family history for diabetes and frequency of chest pain. Considering that high-normal blood pressure is associated with an increased risk of cardiovascular disease, more specific categories for blood pressure should be investigated as risk factors for heart disease (Vasan et al. 2001). In addition, it would be interesting to look at additional cholesterol levels, such as LDL and HDL, considering that previous research has shown a higher incidence of chronic heart disease events among those with a higher LDL cholesterol (Sharrett et al., 2001)
+
+Last but not least, additional research is necessary to understand potential reasons that middle-aged people may have higher cholesterol levels than young adults. Specifically, future studies can compare the physical activity of these two age groups considering that previous research has found the risk of heart disease to decrease with increasing physical activity (Williams, 2001). In terms of current recommendations, prevention efforts should be catered towards middle aged people, females, and those with a high blood pressure as they tend to have the greatest likelihood for heart disease.
+
+###Bibliography
+
+[1] Centers for Disease Control and Prevention. (2017, November 28). Heart Disease Facts & Statistics | cdc.gov. Retrieved March 26, 2019, from https://www.cdc.gov/heartdisease/facts.htm
+
+[2] Collins, R., Peto, R., MacMahon, S., Godwin, J., Qizilbash, N., Collins, R., … Hennekens, C. H. (1990). Blood pressure, stroke, and coronary heart disease: Part 2, short-term reductions in blood pressure: overview of randomised drug trials in their epidemiological context. The Lancet, 335(8693), 827–838. https://doi.org/10.1016/0140-6736(90)90944-Z
+
+[3] Cholesterol and Heart Disease. (2018). Retrieved April 2, 2019, from WebMD website: https://www.webmd.com/heart-disease/guide/heart-disease-lower-cholesterol-risk
+
+[4] Hennekens Charles H. (1998). Increasing Burden of Cardiovascular Disease. Circulation, 97(11), 1095–1102. https://doi.org/10.1161/01.CIR.97.11.1095
+
+[5] Henrich, J., & Gil-White, F. J. (2001). The evolution of prestige: freely conferred deference as a mechanism for enhancing the benefits of cultural transmission. Evolution and Human Behavior, 22(3), 165–196. https://doi.org/10.1016/S1090-5138(00)00071-4
+General, U. S. P. H. S. O. of the S., & Health, U. S. P. H. S. O. on S. and. (1990). The Health Benefits of Smoking Cessation: A Report of the Surgeon General [Official reports]. Retrieved March 26, 2019, from DHHS Publication No. (CDC) 90-8416 website: https://profiles.nlm.nih.gov/nn/b/b/c/t/
+
+[6] Levitzky, Y. S., Pencina, M. J., D’Agostino, R. B., Meigs, J. B., Murabito, J. M., Vasan, R. S., & Fox, C. S. (2008). Impact of Impaired Fasting Glucose on Cardiovascular Disease: The Framingham Heart Study. Journal of the American College of Cardiology, 51(3), 264–270. https://doi.org/10.1016/j.jacc.2007.09.038
+
+[7] Lloyd-Jones, D. M., Leip, E. P., Larson, M. G., D’Agostino, R. B., Beiser, A., Wilson, P. W. F., … Levy, D. (2006). Prediction of lifetime risk for cardiovascular disease by risk factor burden at 50 years of age. Circulation, 113(6), 791–798. https://doi.org/10.1161/CIRCULATIONAHA.105.548206
+
+[8] MacMahon, S., Peto, R., Collins, R., Godwin, J., MacMahon, S., Cutler, J., … Stamler, J. (1990). Blood pressure, stroke, and coronary heart disease: Part 1, prolonged differences in blood pressure: prospective observational studies corrected for the regression dilution bias. The Lancet, 335(8692), 765–774. https://doi.org/10.1016/0140-6736(90)90878-9
+
+[9] Sharrett, A. R., Ballantyne, C. M., Coady, S. A., Heiss, G., Sorlie, P. D., Catellier, D., & Patsch, W. (2001). Coronary Heart Disease Prediction From Lipoprotein Cholesterol Levels, Triglycerides, Lipoprotein(a), Apolipoproteins A-I and B, and HDL Density Subfractions: The Atherosclerosis Risk in Communities (ARIC) Study. Circulation, 104(10), 1108–1113. https://doi.org/10.1161/hc3501.095214
+
+[10] Stamler, J., Vaccaro, O., Neaton, J. D., Wentworth, D., & The Multiple Risk Factor Intervention Trial Research Group. (1993). Diabetes, Other Risk Factors, and 12-Yr Cardiovascular Mortality for Men Screened in the Multiple Risk Factor Intervention Trial. Diabetes Care, 16(2), 434–444. https://doi.org/10.2337/diacare.16.2.434
+
+[11] Vasan, R. S., Larson, M. G., Leip, E. P., Evans, J. C., O’Donnell, C. J., Kannel, W. B., & Levy, D. (2001). Impact of High-Normal Blood Pressure on the Risk of Cardiovascular Disease. New England Journal of Medicine, 345(18), 1291–1297. https://doi.org/10.1056/NEJMoa003417
+
+[12] Verschuren, W. M. M., Jacobs, D. R., Bloemberg, B. P. M., Kromhout, D., Menotti, A., Aravanis, C., … Toshima, H. (1995). Serum Total Cholesterol and Long-term Coronary Heart Disease Mortality in Different Cultures: Twenty-five—Year Follow-up of the Seven Countries Study. JAMA, 274(2), 131–136. https://doi.org/10.1001/jama.1995.03530020049031
+
+[13] Williams, P. T. (2001). Physical fitness and activity as separate heart disease risk factors: a meta-analysis. Medicine and Science in Sports and Exercise, 33(5), 754–761.
